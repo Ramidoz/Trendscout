@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 interface Opportunity {
   topic: string;
   opportunity_score: number;
@@ -27,7 +29,7 @@ function truncateTopic(topic: string, maxWords: number = 8): string {
   return words.slice(0, maxWords).join(" ") + "…";
 }
 
-export default function OpportunityCard({
+const OpportunityCard = memo(function OpportunityCard({
   opportunity,
   rank,
   isSelected,
@@ -45,7 +47,7 @@ export default function OpportunityCard({
       className={`w-full text-left p-4 rounded-xl border transition-all ${
         isSelected
           ? "border-purple-500/60 bg-zinc-800/80 shadow-[0_0_12px_rgba(168,85,247,0.08)]"
-          : "border-zinc-800 bg-zinc-900 hover:border-zinc-600"
+          : "border-zinc-800 bg-zinc-900 hover:border-zinc-600 hover:bg-zinc-800/40"
       }`}
     >
       {rank === 1 && (
@@ -75,4 +77,6 @@ export default function OpportunityCard({
       <p className="text-sm text-zinc-500 mt-2.5 line-clamp-2">{reason}</p>
     </button>
   );
-}
+});
+
+export default OpportunityCard;

@@ -1,9 +1,11 @@
+import { memo } from "react";
+
 interface SessionHistoryProps {
   history: string[];
   onReplay: (query: string) => void;
 }
 
-export default function SessionHistory({ history, onReplay }: SessionHistoryProps) {
+const SessionHistory = memo(function SessionHistory({ history, onReplay }: SessionHistoryProps) {
   if (history.length === 0) return null;
 
   return (
@@ -15,7 +17,7 @@ export default function SessionHistory({ history, onReplay }: SessionHistoryProp
             key={q}
             type="button"
             onClick={() => onReplay(q)}
-            className="px-3 py-1.5 text-sm rounded-full border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-600 hover:scale-105 active:scale-95 transition-all"
+            className="px-3 py-1.5 text-sm rounded-full border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-600 hover:scale-[1.03] active:scale-[0.98] transition-all"
           >
             {q}
           </button>
@@ -23,4 +25,6 @@ export default function SessionHistory({ history, onReplay }: SessionHistoryProp
       </div>
     </section>
   );
-}
+});
+
+export default SessionHistory;

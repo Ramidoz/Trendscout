@@ -75,6 +75,12 @@ function addToHistory(history: string[], query: string): string[] {
   return updated;
 }
 
+const DEMO_PROMPTS = [
+  { icon: "🎬", query: "AI tools for creators", description: "Discover trending AI tools" },
+  { icon: "🐍", query: "python automation", description: "Find automation opportunities" },
+  { icon: "💰", query: "crypto news", description: "Analyze crypto content trends" },
+];
+
 /* ───── Page ───── */
 
 export default function Home() {
@@ -96,6 +102,10 @@ export default function Home() {
   const requestIdRef = useRef(0);
   const [resultsKey, setResultsKey] = useState(0);
 
+  /* Refs for scroll/focus */
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const refinementRef = useRef<HTMLTextAreaElement>(null);
+
   /* Load history on mount */
   useEffect(() => {
     setHistory(loadHistory());
@@ -105,7 +115,7 @@ export default function Home() {
   const handleGenerate = useCallback(
     async (overrideQuery?: string) => {
       const q = (overrideQuery ?? query).trim();
-      if (!q) return;
+      if (!q || q.length < 3) return;
 
       const currentRequestId = ++requestIdRef.current;
       setLoading(true);
@@ -138,11 +148,21 @@ export default function Home() {
         setSelectedTopic(null);
         setResultsKey((k) => k + 1);
         setHistory((prev) => addToHistory(prev, q));
+
+        /* Scroll to results after render */
+        setTimeout(() => {
+          resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 100);
       } catch (err) {
         if (currentRequestId !== requestIdRef.current) return;
-        setError(
-          err instanceof Error ? err.message : "Something went wrong"
-        );
+
+        if (err instanceof TypeError && err.message === "Failed to fetch") {
+          setError("Could not reach the server — check your connection and try again");
+        } else {
+          setError(
+            err instanceof Error ? err.message : "Something went wrong"
+          );
+        }
         /* Preserve previous results on error */
       } finally {
         if (currentRequestId === requestIdRef.current) {
@@ -188,6 +208,7 @@ export default function Home() {
 
   function handleRefineTopic(title: string) {
     setRefinementInput(title);
+    setTimeout(() => refinementRef.current?.focus(), 50);
   }
 
   const hasResults =
@@ -234,9 +255,40 @@ export default function Home() {
           </div>
         )}
 
+        {/* Demo Empty State */}
+        {!hasResults && !loading && !error && (
+          <div className="mt-16 flex flex-col items-center text-center">
+            <p className="text-zinc-400 text-sm mb-6">
+              Ask anything like a creator:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl w-full">
+              {DEMO_PROMPTS.map((prompt) => (
+                <button
+                  key={prompt.query}
+                  type="button"
+                  onClick={() => {
+                    setQuery(prompt.query);
+                    handleGenerate(prompt.query);
+                  }}
+                  className="p-4 rounded-xl border border-zinc-800 bg-zinc-900 hover:border-purple-500/40 hover:bg-zinc-800/50 transition-all text-left group"
+                >
+                  <span className="text-2xl mb-2 block">{prompt.icon}</span>
+                  <span className="text-sm font-medium text-zinc-200 group-hover:text-purple-300 transition-colors">
+                    {prompt.query}
+                  </span>
+                  <span className="text-xs text-zinc-500 block mt-1">
+                    {prompt.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Main 3-column layout */}
         {hasResults && !loading && (
           <div
+            ref={resultsRef}
             key={resultsKey}
             className="mt-8 grid grid-cols-1 lg:grid-cols-4 gap-6 animate-fade-in"
           >
@@ -261,6 +313,7 @@ export default function Home() {
             {/* Right: Interaction Panel */}
             <div className="lg:col-span-1">
               <InteractionPanel
+                ref={refinementRef}
                 selectedTopic={selectedTopic}
                 refinementInput={refinementInput}
                 loading={loading}

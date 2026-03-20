@@ -31,7 +31,7 @@ export default function QueryBar({
         <button
           type="button"
           onClick={onSubmit}
-          disabled={loading || !query.trim()}
+          disabled={loading || query.trim().length < 3}
           className="px-6 py-3 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           {loading ? "Analyzing..." : "Generate Strategy"}
