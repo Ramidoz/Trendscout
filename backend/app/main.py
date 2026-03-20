@@ -30,6 +30,11 @@ app.add_middleware(
 )
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok", "cors_version": "v3"}
+
+
 @app.get("/briefing")
 def get_briefing(query: str = Query(..., min_length=1, max_length=200)):
     """Fetch YouTube trends, score them, and generate a content briefing."""
