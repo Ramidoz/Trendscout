@@ -1,6 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import QueryBar from "@/components/QueryBar";
+import AgentSteps from "@/components/AgentSteps";
+import OpportunityList from "@/components/OpportunityList";
+import ActionPlan from "@/components/ActionPlan";
+import InteractionPanel from "@/components/InteractionPanel";
+import SessionHistory from "@/components/SessionHistory";
+
+/* ───── Types ───── */
 
 interface Opportunity {
   topic: string;
@@ -21,165 +29,239 @@ interface Idea {
   expected_outcome: string;
 }
 
-interface Briefing {
-  top_opportunities: Opportunity[];
-  action_plan: Idea[];
+interface AgentStep {
+  tool: string;
+  args: Record<string, unknown>;
 }
 
-interface ApiResponse {
-  query: string;
-  briefing: Briefing;
+interface AgentResponse {
+  answer: string;
+  steps: AgentStep[];
+  briefing: {
+    top_opportunities: Opportunity[];
+    action_plan: Idea[];
+  } | null;
 }
+
+/* ───── Helpers ───── */
+
+const HISTORY_KEY = "trendscope_history";
+const MAX_HISTORY = 10;
+
+function loadHistory(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(history: string[]) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch {
+    /* ignore quota errors */
+  }
+}
+
+function addToHistory(history: string[], query: string): string[] {
+  const filtered = history.filter(
+    (h) => h.toLowerCase() !== query.toLowerCase()
+  );
+  const updated = [query, ...filtered].slice(0, MAX_HISTORY);
+  saveHistory(updated);
+  return updated;
+}
+
+/* ───── Page ───── */
 
 export default function Home() {
+  /* State */
   const [query, setQuery] = useState("");
-  const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleGenerate() {
-    if (!query.trim()) return;
-    setLoading(true);
-    setError("");
-    setData(null);
+  const [answer, setAnswer] = useState("");
+  const [steps, setSteps] = useState<AgentStep[]>([]);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [actionPlan, setActionPlan] = useState<Idea[]>([]);
 
-    try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(
-        `${apiBase}/briefing?query=${encodeURIComponent(query.trim())}`
-      );
-      if (!res.ok) {
-        const errBody = await res.text();
-        throw new Error(errBody || `HTTP ${res.status}`);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [refinementInput, setRefinementInput] = useState("");
+  const [history, setHistory] = useState<string[]>([]);
+
+  /* Request tracking */
+  const requestIdRef = useRef(0);
+
+  /* Load history on mount */
+  useEffect(() => {
+    setHistory(loadHistory());
+  }, []);
+
+  /* Core fetch */
+  const handleGenerate = useCallback(
+    async (overrideQuery?: string) => {
+      const q = (overrideQuery ?? query).trim();
+      if (!q) return;
+
+      const currentRequestId = ++requestIdRef.current;
+      setLoading(true);
+      setError("");
+
+      try {
+        const apiBase =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const res = await fetch(
+          `${apiBase}/agent?q=${encodeURIComponent(q)}`
+        );
+
+        /* Stale response check */
+        if (currentRequestId !== requestIdRef.current) return;
+
+        if (!res.ok) {
+          const errBody = await res.text();
+          throw new Error(errBody || `HTTP ${res.status}`);
+        }
+
+        const json: AgentResponse = await res.json();
+
+        /* Stale response check (after await) */
+        if (currentRequestId !== requestIdRef.current) return;
+
+        setAnswer(json.answer);
+        setSteps(json.steps);
+        setOpportunities(json.briefing?.top_opportunities ?? []);
+        setActionPlan(json.briefing?.action_plan ?? []);
+        setSelectedTopic(null);
+        setHistory((prev) => addToHistory(prev, q));
+      } catch (err) {
+        if (currentRequestId !== requestIdRef.current) return;
+        setError(
+          err instanceof Error ? err.message : "Something went wrong"
+        );
+        /* Preserve previous results on error */
+      } finally {
+        if (currentRequestId === requestIdRef.current) {
+          setLoading(false);
+        }
       }
-      const json: ApiResponse = await res.json();
-      setData(json);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
+    },
+    [query]
+  );
+
+  /* Derived state: filtered action plan */
+  const filteredActionPlan = selectedTopic
+    ? actionPlan.filter(
+        (idea) =>
+          idea.title.toLowerCase().includes(selectedTopic.toLowerCase()) ||
+          idea.reason.toLowerCase().includes(selectedTopic.toLowerCase())
+      )
+    : actionPlan;
+
+  const displayedActionPlan =
+    filteredActionPlan.length > 0 ? filteredActionPlan : actionPlan;
+
+  /* Handlers */
+  function handleRefine() {
+    if (!refinementInput.trim()) return;
+    setQuery(refinementInput.trim());
+    handleGenerate(refinementInput.trim());
   }
 
+  function handleFollowUp(followUpQuery: string) {
+    setQuery(followUpQuery);
+    handleGenerate(followUpQuery);
+  }
+
+  function handleReplay(pastQuery: string) {
+    setQuery(pastQuery);
+    handleGenerate(pastQuery);
+  }
+
+  function handleFocusTopic(title: string) {
+    setSelectedTopic((prev) => (prev === title ? null : title));
+  }
+
+  function handleRefineTopic(title: string) {
+    setRefinementInput(title);
+  }
+
+  const hasResults =
+    opportunities.length > 0 || actionPlan.length > 0 || answer;
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 p-8">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">TrendScope</h1>
-        <p className="text-zinc-400 mb-8">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <h1 className="text-3xl font-bold mb-1">TrendScope</h1>
+        <p className="text-zinc-400 mb-6">
           Enter a topic to get a prioritized content strategy based on live
           YouTube trends.
         </p>
 
-        {/* Input */}
-        <div className="flex gap-3 mb-10">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
-            placeholder="e.g., AI tools, fitness, finance"
-            className="flex-1 px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
-          />
-          <button
-            onClick={handleGenerate}
-            disabled={loading || !query.trim()}
-            className="px-6 py-3 rounded-lg bg-white text-zinc-900 font-semibold hover:bg-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {loading ? "Analyzing..." : "Generate Strategy"}
-          </button>
-        </div>
+        {/* Query Bar */}
+        <QueryBar
+          query={query}
+          loading={loading}
+          onQueryChange={setQuery}
+          onSubmit={() => handleGenerate()}
+        />
 
+        {/* Error */}
         {error && (
-          <div className="mb-8 p-4 rounded-lg bg-red-900/30 border border-red-800 text-red-300">
+          <div className="mt-4 p-4 rounded-xl bg-red-900/30 border border-red-800 text-red-300 text-sm">
             {error}
           </div>
         )}
 
-        {data && (
-          <>
-            {/* Top Opportunities */}
-            <section className="mb-10">
-              <h2 className="text-xl font-semibold mb-4 text-zinc-300">
-                Top Opportunities
-              </h2>
-              <div className="space-y-3">
-                {data.briefing.top_opportunities.map((opp, i) => (
-                  <div
-                    key={i}
-                    className="p-4 rounded-lg bg-zinc-900 border border-zinc-800"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-zinc-100">
-                        {opp.topic}
-                      </span>
-                      <span className="text-sm font-mono text-zinc-400">
-                        {opp.opportunity_score.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex gap-3 text-xs text-zinc-500 mb-2">
-                      <span className="px-2 py-0.5 rounded bg-zinc-800">
-                        {opp.stage}
-                      </span>
-                      <span className="px-2 py-0.5 rounded bg-zinc-800">
-                        vel: {opp.velocity_label}
-                      </span>
-                      <span className="px-2 py-0.5 rounded bg-zinc-800">
-                        eng: {opp.engagement_label}
-                      </span>
-                    </div>
-                    <p className="text-sm text-zinc-400">{opp.reason}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Action Plan */}
-            <section>
-              <h2 className="text-xl font-semibold mb-4 text-zinc-300">
-                Action Plan
-              </h2>
-              <div className="space-y-4">
-                {data.briefing.action_plan.map((idea, i) => (
-                  <div
-                    key={i}
-                    className={`p-5 rounded-lg border ${
-                      idea.priority === 1
-                        ? "bg-zinc-900 border-white/20"
-                        : "bg-zinc-900 border-zinc-800"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <span
-                        className={`text-xs font-bold px-2.5 py-1 rounded ${
-                          idea.priority === 1
-                            ? "bg-white text-zinc-900"
-                            : "bg-zinc-700 text-zinc-300"
-                        }`}
-                      >
-                        #{idea.priority}
-                      </span>
-                      <span className="text-xs uppercase tracking-wide text-zinc-500">
-                        {idea.format}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-semibold mb-2 text-zinc-100">
-                      {idea.title}
-                    </h3>
-                    <p className="text-sm text-zinc-400 mb-3 italic">
-                      &ldquo;{idea.hook}&rdquo;
-                    </p>
-                    <p className="text-sm text-zinc-400 mb-2">{idea.reason}</p>
-                    {idea.expected_outcome && (
-                      <p className="text-sm text-zinc-300 font-medium">
-                        Outcome: {idea.expected_outcome}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-          </>
+        {/* Agent Steps */}
+        {(loading || steps.length > 0) && (
+          <div className="mt-6">
+            <AgentSteps steps={steps} loading={loading} />
+          </div>
         )}
+
+        {/* Main 3-column layout */}
+        {hasResults && !loading && (
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Left: Opportunities */}
+            <div className="lg:col-span-1">
+              <OpportunityList
+                opportunities={opportunities}
+                selectedTopic={selectedTopic}
+                onSelectTopic={setSelectedTopic}
+              />
+            </div>
+
+            {/* Center: Action Plan */}
+            <div className="lg:col-span-2">
+              <ActionPlan
+                ideas={displayedActionPlan}
+                onFocusTopic={handleFocusTopic}
+                onRefineTopic={handleRefineTopic}
+              />
+            </div>
+
+            {/* Right: Interaction Panel */}
+            <div className="lg:col-span-1">
+              <InteractionPanel
+                selectedTopic={selectedTopic}
+                refinementInput={refinementInput}
+                loading={loading}
+                answer={answer}
+                opportunities={opportunities}
+                onRefinementChange={setRefinementInput}
+                onRefine={handleRefine}
+                onFollowUp={handleFollowUp}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Session History */}
+        <SessionHistory history={history} onReplay={handleReplay} />
       </div>
     </div>
   );
