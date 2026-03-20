@@ -28,11 +28,11 @@ export default function OpportunityList({
       </h2>
 
       {opportunities.length === 0 ? (
-        <p className="text-sm text-zinc-500">
-          No opportunities found — try a different query
+        <p className="text-sm text-zinc-300">
+          No strong opportunities found. Try a more specific query.
         </p>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {opportunities.map((opp, i) => (
             <OpportunityCard
               key={`${opp.topic}-${i}`}

@@ -25,11 +25,11 @@ export default function ActionPlan({
       <h2 className="text-lg font-semibold text-zinc-300 mb-4">Action Plan</h2>
 
       {ideas.length === 0 ? (
-        <p className="text-sm text-zinc-500">
-          No action plan available — try a more specific query
+        <p className="text-sm text-zinc-300">
+          No strategy generated yet. Refine your query.
         </p>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {ideas.map((idea, i) => (
             <ActionCard
               key={`${idea.title}-${i}`}

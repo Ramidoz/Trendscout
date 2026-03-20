@@ -63,22 +63,24 @@ export default function AgentSteps({ steps, loading }: AgentStepsProps) {
       </button>
 
       {expanded && (
-        <div className="px-4 pb-4 space-y-2">
+        <div className="px-4 pb-4 space-y-2.5">
           {loading &&
             LOADING_STAGES.map((label, i) => (
               <div
                 key={label}
-                className={`flex items-center gap-2.5 text-sm transition-colors ${
+                className={`flex items-center gap-3 text-sm transition-colors ${
                   i <= loadingStage ? "text-purple-400" : "text-zinc-600"
                 }`}
               >
-                {i < loadingStage ? (
-                  <span className="text-green-400">✓</span>
-                ) : i === loadingStage ? (
-                  <span className="inline-block w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <span className="inline-block w-2 h-2 rounded-full bg-zinc-700 ml-0.5" />
-                )}
+                <span className="w-4 flex items-center justify-center shrink-0">
+                  {i < loadingStage ? (
+                    <span className="text-green-400">✓</span>
+                  ) : i === loadingStage ? (
+                    <span className="inline-block w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <span className="inline-block w-2 h-2 rounded-full bg-zinc-700" />
+                  )}
+                </span>
                 <span>{label}</span>
               </div>
             ))}
@@ -93,9 +95,9 @@ export default function AgentSteps({ steps, loading }: AgentStepsProps) {
             steps.map((step, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2.5 text-sm text-zinc-400"
+                className="flex items-center gap-3 text-sm text-zinc-400"
               >
-                <span className="text-green-400">✓</span>
+                <span className="w-4 flex items-center justify-center shrink-0 text-green-400">✓</span>
                 <span>
                   {i + 1}. {formatStep(step)}
                 </span>
