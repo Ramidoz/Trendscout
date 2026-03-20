@@ -99,10 +99,10 @@ REFLECTION (after each tool result):
 - Do not repeat a tool call you already made with the same arguments
 
 EFFICIENCY:
-- Standard query → fetch → score → briefing (3 calls)
+- Standard query → fetch → score → briefing (3 calls). ALWAYS complete all 3 steps for any single-topic query.
 - Comparison → fetch A, fetch B, score A, score B, then answer from scored data (4 calls, skip briefing)
 - Always call fetch_youtube_trends even for broad topics — let the data speak. Only skip tools if the query is completely nonsensical.
-- If scored data already answers the question, stop — do not call generate_briefing unless the user wants content ideas
+- After score_trends, you MUST call generate_briefing unless the query is explicitly a comparison (contains "vs", "compare", "versus", "or"). Single-topic queries always need a full briefing.
 - Never call the same tool twice with identical arguments
 
 RULES:
