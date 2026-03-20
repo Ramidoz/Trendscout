@@ -34,6 +34,7 @@ export default function ActionPlan({
             <ActionCard
               key={`${idea.title}-${i}`}
               idea={idea}
+              isTopPick={i === 0}
               onFocus={() => onFocusTopic(idea.title)}
               onRefine={() => onRefineTopic(idea.title)}
             />

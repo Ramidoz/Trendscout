@@ -16,20 +16,20 @@ function formatStep(step: Step): string {
   const q = (step.args.query as string) ?? "";
   switch (step.tool) {
     case "fetch_youtube_trends":
-      return `Searched YouTube for "${q}"`;
+      return `Fetch trends for "${q}"`;
     case "score_trends":
-      return `Scored and ranked trends for "${q}"`;
+      return `Score opportunities for "${q}"`;
     case "generate_briefing":
-      return "Generated content strategy briefing";
+      return "Generate strategy";
     default:
       return `${step.tool}(${JSON.stringify(step.args)})`;
   }
 }
 
 const LOADING_STAGES = [
-  "Fetching trends...",
-  "Scoring opportunities...",
-  "Generating strategy...",
+  "Fetching trends",
+  "Scoring opportunities",
+  "Generating strategy",
 ];
 
 export default function AgentSteps({ steps, loading }: AgentStepsProps) {
@@ -51,8 +51,6 @@ export default function AgentSteps({ steps, loading }: AgentStepsProps) {
     };
   }, [loading]);
 
-  const hasContent = loading || steps.length > 0;
-
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
       <button
@@ -65,13 +63,25 @@ export default function AgentSteps({ steps, loading }: AgentStepsProps) {
       </button>
 
       {expanded && (
-        <div className="px-4 pb-3 space-y-1.5">
-          {loading && (
-            <div className="flex items-center gap-2 text-sm text-purple-400">
-              <span className="inline-block w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-              {LOADING_STAGES[loadingStage]}
-            </div>
-          )}
+        <div className="px-4 pb-4 space-y-2">
+          {loading &&
+            LOADING_STAGES.map((label, i) => (
+              <div
+                key={label}
+                className={`flex items-center gap-2.5 text-sm transition-colors ${
+                  i <= loadingStage ? "text-purple-400" : "text-zinc-600"
+                }`}
+              >
+                {i < loadingStage ? (
+                  <span className="text-green-400">✓</span>
+                ) : i === loadingStage ? (
+                  <span className="inline-block w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <span className="inline-block w-2 h-2 rounded-full bg-zinc-700 ml-0.5" />
+                )}
+                <span>{label}</span>
+              </div>
+            ))}
 
           {!loading && steps.length === 0 && (
             <p className="text-sm text-zinc-500">
@@ -81,9 +91,14 @@ export default function AgentSteps({ steps, loading }: AgentStepsProps) {
 
           {!loading &&
             steps.map((step, i) => (
-              <div key={i} className="flex items-start gap-2 text-sm text-zinc-400">
-                <span className="text-zinc-600 shrink-0">{i + 1}.</span>
-                <span>{formatStep(step)}</span>
+              <div
+                key={i}
+                className="flex items-center gap-2.5 text-sm text-zinc-400"
+              >
+                <span className="text-green-400">✓</span>
+                <span>
+                  {i + 1}. {formatStep(step)}
+                </span>
               </div>
             ))}
         </div>

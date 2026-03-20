@@ -92,8 +92,9 @@ export default function Home() {
   const [refinementInput, setRefinementInput] = useState("");
   const [history, setHistory] = useState<string[]>([]);
 
-  /* Request tracking */
+  /* Request tracking + fade-in */
   const requestIdRef = useRef(0);
+  const [resultsKey, setResultsKey] = useState(0);
 
   /* Load history on mount */
   useEffect(() => {
@@ -135,6 +136,7 @@ export default function Home() {
         setOpportunities(json.briefing?.top_opportunities ?? []);
         setActionPlan(json.briefing?.action_plan ?? []);
         setSelectedTopic(null);
+        setResultsKey((k) => k + 1);
         setHistory((prev) => addToHistory(prev, q));
       } catch (err) {
         if (currentRequestId !== requestIdRef.current) return;
@@ -196,12 +198,11 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <h1 className="text-3xl font-bold mb-1">TrendScope</h1>
-        <p className="text-zinc-400 mb-6">
-          Enter a topic to get a prioritized content strategy based on live
-          YouTube trends.
+        <p className="text-zinc-500 text-sm mb-8">
+          Powered by real-time YouTube trend analysis
         </p>
 
-        {/* Query Bar */}
+        {/* Query Bar (sticky) */}
         <QueryBar
           query={query}
           loading={loading}
@@ -209,10 +210,20 @@ export default function Home() {
           onSubmit={() => handleGenerate()}
         />
 
+        {/* Spacer for sticky bar */}
+        <div className="h-4" />
+
         {/* Error */}
         {error && (
-          <div className="mt-4 p-4 rounded-xl bg-red-900/30 border border-red-800 text-red-300 text-sm">
-            {error}
+          <div className="mt-2 p-4 rounded-xl bg-red-900/30 border border-red-800 text-red-300 text-sm flex items-center justify-between">
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={() => handleGenerate()}
+              className="ml-4 shrink-0 px-3 py-1 text-xs rounded-lg border border-red-700 text-red-300 hover:bg-red-900/40 transition-colors"
+            >
+              Retry
+            </button>
           </div>
         )}
 
@@ -225,7 +236,10 @@ export default function Home() {
 
         {/* Main 3-column layout */}
         {hasResults && !loading && (
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div
+            key={resultsKey}
+            className="mt-8 grid grid-cols-1 lg:grid-cols-4 gap-6 animate-fade-in"
+          >
             {/* Left: Opportunities */}
             <div className="lg:col-span-1">
               <OpportunityList

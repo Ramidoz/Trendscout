@@ -15,7 +15,7 @@ export default function SessionHistory({ history, onReplay }: SessionHistoryProp
             key={q}
             type="button"
             onClick={() => onReplay(q)}
-            className="px-3 py-1.5 text-sm rounded-full border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-600 transition-colors"
+            className="px-3 py-1.5 text-sm rounded-full border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-600 hover:scale-105 active:scale-95 transition-all"
           >
             {q}
           </button>
