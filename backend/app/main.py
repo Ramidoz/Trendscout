@@ -18,6 +18,7 @@ allowed_origins = [
     "http://localhost:3000",
     "https://frontend-ramidozs-projects.vercel.app",
     "https://frontend-omega-eight-ffgnsqg2ba.vercel.app",
+    "https://trendscout-production-ae4e.up.railway.app",
 ]
 
 app.add_middleware(
