@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment
+.env
+.env*.local
+
+# Node
+node_modules/
+.next/
+
+# Vercel
+.vercel/
+
+# IDE
+.idea/
+.vscode/
+*.swp
