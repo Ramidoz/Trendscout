@@ -16,16 +16,14 @@ app = FastAPI(title="TrendScope API")
 
 allowed_origins = [
     "http://localhost:3000",
+    "https://frontend-ramidozs-projects.vercel.app",
 ]
-# Add production frontend URL from environment if set
-_frontend_url = os.environ.get("FRONTEND_URL")
-if _frontend_url:
-    allowed_origins.append(_frontend_url)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_methods=["GET"],
+    allow_credentials=True,
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
