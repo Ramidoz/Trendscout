@@ -101,7 +101,7 @@ REFLECTION (after each tool result):
 EFFICIENCY:
 - Standard query → fetch → score → briefing (3 calls)
 - Comparison → fetch A, fetch B, score A, score B, then answer from scored data (4 calls, skip briefing)
-- Vague/generic query (single word like "content") → answer directly suggesting a more specific query. No tools needed.
+- Always call fetch_youtube_trends even for broad topics — let the data speak. Only skip tools if the query is completely nonsensical.
 - If scored data already answers the question, stop — do not call generate_briefing unless the user wants content ideas
 - Never call the same tool twice with identical arguments
 
