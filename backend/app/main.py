@@ -12,7 +12,7 @@ from app.agent import run_agent
 # Load .env from backend directory
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
-app = FastAPI(title="TrendScope API")
+app = FastAPI(title="TrendScope API")  # v2 CORS update
 
 allowed_origins = [
     "http://localhost:3000",
