@@ -17,11 +17,13 @@ app = FastAPI(title="TrendScope API")
 allowed_origins = [
     "http://localhost:3000",
     "https://frontend-ramidozs-projects.vercel.app",
+    "https://frontend-omega-eight-ffgnsqg2ba.vercel.app",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=r"https://frontend-.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
